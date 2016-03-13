@@ -43,7 +43,7 @@ class Fase():
 
         :param obstaculos:
         """
-        pass
+        self._obstaculos.extend(obstaculos)
 
     def adicionar_porco(self, *porcos):
         """
@@ -51,7 +51,7 @@ class Fase():
 
         :param porcos:
         """
-        pass
+        self._porcos.extend(porcos)
 
     def adicionar_passaro(self, *passaros):
         """
@@ -59,7 +59,7 @@ class Fase():
 
         :param passaros:
         """
-        pass
+        self._passaros.extend(passaros)
 
     def status(self):
         """
@@ -73,7 +73,15 @@ class Fase():
 
         :return:
         """
-        return EM_ANDAMENTO
+
+        haveBird = self._existe_passaro_ativo()
+        havePig = self._existe_porco_ativo()
+        if (not haveBird) and havePig:
+            return DERROTA
+        elif haveBird and havePig:
+            return EM_ANDAMENTO
+        else:
+            return  VITORIA
 
     def lancar(self, angulo, tempo):
         """
@@ -86,7 +94,11 @@ class Fase():
         :param angulo: ângulo de lançamento
         :param tempo: Tempo de lançamento
         """
-        pass
+        passaro = self._passaro_parado()
+
+        if passaro:
+            passaro.lancar(angulo, tempo)
+
 
 
     def calcular_pontos(self, tempo):
@@ -100,8 +112,44 @@ class Fase():
         """
         pontos=[]
 
+        for ator in chain(self._passaros, self._obstaculos, self._porcos) :
+            x, y =  ator.calcular_posicao(tempo)
+            pontos.append( Ponto(x,y, ator.caracter()))
+
+        self._check_colisao()
+
         return pontos
+
+    def _check_colisao(self):
+        for passaro in self._passaros:
+
+            if not passaro.estaAtivo():
+                continue
+
+            passaro.colidir_com_chao()
+            for ator in chain(self._obstaculos, self._porcos):
+                passaro.colidir(ator , self.intervalo_de_colisao)
+
+    def _passaro_parado(self):
+        for p in self._passaros:
+            if not p.foi_lancado():
+                return p
+        return False
 
     def _transformar_em_ponto(self, ator):
         return Ponto(ator.x, ator.y, ator.caracter())
+
+    def _existe_porco_ativo(self):
+        return self._verificar_se_existe_ator_ativo(self._porcos)
+
+    def _existe_passaro_ativo(self):
+        return self._verificar_se_existe_ator_ativo(self._passaros)
+
+    def _verificar_se_existe_ator_ativo(self, atores):
+        for a in atores:
+            if a.status == ATIVO:
+                return True
+        return False
+
+
 
